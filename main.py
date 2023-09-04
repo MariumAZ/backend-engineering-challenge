@@ -38,11 +38,13 @@ def get_all_mean_del(diff, mean_del, orig_del, window_size=10):
     :param window_size: the moving average window size
     :return: list of the delivery times
     """
+    # length of the output times and delivery per minute
     w = 0
-    # final list
+    # final list of delivery times
     result = []
     for i in range(len(mean_del)):
         result += [mean_del[i]] * int(diff[i])
+        print(result)
         w += diff[i]
         if w > window_size:
             result[-int(w - window_size):] = [orig_del[i]] * int(w - window_size)
@@ -88,11 +90,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="A MVA script")
 
     # Define positional arguments
-    parser.add_argument("input_file", help="Input file path")
-    parser.add_argument("window_size", help="Window size")
+    parser.add_argument("--input_file", help="Input file path")
+    parser.add_argument("--window_size", type=int,  help="Window size")
 
     # Define optional arguments
-    parser.add_argument("-v", "--verbose", help="Enable verbose mode", action="store_true")
+    parser.add_argument("-v", "--verbose", help="Enable verbose mode",
+                        action="store_true")
 
     # Parse the command-line arguments
     args = parser.parse_args()
@@ -102,8 +105,15 @@ if __name__ == "__main__":
     window_size = args.window_size
 
     dates, orig_del = extract_dates_del_from_json(input_file)
+    print("dates:", dates)
+    print("duration: ", orig_del)
     timestamps = get_timestamp_from_date(dates)
+    print("timestamps:", timestamps)
     diff = [(a - b) // 60 for a, b in zip(timestamps[1:], timestamps)]
+    # append 1 for the last instance
+    diff.append(1)
+    print("difference between durations", diff)
     mean_del = [orig_del[0]] + [(a + b) / 2 for a, b in zip(orig_del[1:], orig_del)]
+    print("mean_del:", mean_del)
     result = get_all_mean_del(diff, mean_del, orig_del, window_size=window_size)
     format_output(result, dates, output_file="output.json")
